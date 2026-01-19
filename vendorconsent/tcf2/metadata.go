@@ -45,6 +45,7 @@ type ConsentMetadata struct {
 	vendorConsents                vendorConsentsResolver
 	vendorLegitimateInterests     vendorConsentsResolver
 	publisherRestrictions         pubRestrictResolver
+	oobDisclosedVendors           vendorConsentsResolver
 }
 
 type vendorConsentsResolver interface {
@@ -146,7 +147,7 @@ func (c ConsentMetadata) VendorListVersion() uint16 {
 // TCFPolicyVersion returns the TCF policy version stored in bits 133 to 138
 func (c ConsentMetadata) TCFPolicyVersion() uint8 {
 	// Stored in bits 133-138.. which is [0000xxxx xx00000000] starting at the 17th byte
-	return uint8(((c.data[16] & 0x0f) << 2) | (c.data[17] & 0xc0) >> 6)
+	return uint8(((c.data[16] & 0x0f) << 2) | (c.data[17]&0xc0)>>6)
 }
 
 // MaxVendorID returns the maximum value for vendor identifier in bits 214 to 229
@@ -203,6 +204,24 @@ func (c ConsentMetadata) VendorLegitInterest(id uint16) bool {
 // CheckPubRestriction returns the publisher restriction for a given purpose id, restriction type and vendor id
 func (c ConsentMetadata) CheckPubRestriction(purposeID uint8, restrictType uint8, vendor uint16) bool {
 	return c.publisherRestrictions.CheckPubRestriction(purposeID, restrictType, vendor)
+}
+
+// OOBDisclosedVendor returns true if the given vendor ID was disclosed (shown to the user) in the CMP UI.
+// Returns false if the vendor was not disclosed or if OOBDisclosedVendors segment is not present.
+func (c ConsentMetadata) OOBDisclosedVendor(id uint16) bool {
+	if c.oobDisclosedVendors == nil {
+		return false
+	}
+	return c.oobDisclosedVendors.VendorConsent(id)
+}
+
+// OOBDisclosedVendorsMaxID returns the maximum vendor ID in the OOBDisclosedVendors segment.
+// Returns 0 if the segment is not present.
+func (c ConsentMetadata) OOBDisclosedVendorsMaxID() uint16 {
+	if c.oobDisclosedVendors == nil {
+		return 0
+	}
+	return c.oobDisclosedVendors.MaxVendorID()
 }
 
 // Returns true if the bitIndex'th bit in data is a 1, and false if it's a 0.
