@@ -22,6 +22,25 @@ func ParseString(consent string) (api.VendorConsents, error) {
 		return nil, consentconstants.ErrEmptyDecodedConsent
 	}
 
+	decoded, coreEnd, err := decodeBaseSegment(consent)
+	if err != nil {
+		return nil, err
+	}
+
+	metadata, err := Parse(decoded)
+	if err != nil {
+		return nil, err
+	}
+
+	consentMetadata, ok := metadata.(ConsentMetadata)
+	if ok && coreEnd < len(consent) {
+		parseOptionalSegments(consent, coreEnd, &consentMetadata)
+		return consentMetadata, nil
+	}
+	return metadata, nil
+}
+
+func decodeBaseSegment(consent string) ([]byte, int, error) {
 	coreEnd := strings.IndexByte(consent, consentStringTCF2Separator)
 	if coreEnd == -1 {
 		coreEnd = len(consent)
@@ -32,66 +51,68 @@ func ParseString(consent string) (api.VendorConsents, error) {
 	decoded := buff
 	n, err := base64.RawURLEncoding.Decode(decoded, buff)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	decoded = decoded[:n:n]
 
-	metadata, err := Parse(decoded)
-	if err != nil {
-		return nil, err
-	}
-
-	consentMetadata, ok := metadata.(ConsentMetadata)
-	if ok && coreEnd < len(consent) {
-		segmentStart := coreEnd + 1
-		for segmentStart < len(consent) {
-			segmentEnd := strings.IndexByte(consent[segmentStart:], consentStringTCF2Separator)
-
-			if segmentEnd == -1 {
-				segmentEnd = len(consent)
-			} else {
-				segmentEnd += segmentStart
-			}
-
-			segmentStr := consent[segmentStart:segmentEnd]
-			segmentBuff := []byte(segmentStr)
-			segmentDecoded := segmentBuff
-			segmentN, err := base64.RawURLEncoding.Decode(segmentDecoded, segmentBuff)
-			if err != nil {
-				segmentStart = segmentEnd + 1
-				continue
-			}
-			segmentDecoded = segmentDecoded[:segmentN]
-
-			if len(segmentDecoded) == 0 {
-				segmentStart = segmentEnd + 1
-				continue
-			}
-
-			segmentType, err := bitutils.ParseByte3(segmentDecoded, 0)
-			if err != nil {
-				segmentStart = segmentEnd + 1
-				continue
-			}
-
-			if segmentType == segmentTypeDisclosedVendors {
-				oobDisclosedVendors, err := parseOOBVendorSegment(segmentDecoded, 3)
-				if err == nil {
-					consentMetadata.oobDisclosedVendors = oobDisclosedVendors
-					break
-				}
-			}
-
-			segmentStart = segmentEnd + 1
-		}
-		return consentMetadata, nil
-	}
-	return metadata, nil
+	return decoded, coreEnd, nil
 }
 
-// Parse parses the TCF 2.0 vendor consent data from the string. This string should *not* be encoded (by base64 or any other encoding).
-// If the data is malformed and cannot be interpreted as a vendor consent string, this will return an error.
+func parseOptionalSegments(consent string, coreEnd int, metadata *ConsentMetadata) {
+	segmentStart := coreEnd + 1
+	for segmentStart < len(consent) {
+		segmentEnd := strings.IndexByte(consent[segmentStart:], consentStringTCF2Separator)
+
+		if segmentEnd == -1 {
+			segmentEnd = len(consent)
+		} else {
+			segmentEnd += segmentStart
+		}
+
+		segmentStr := consent[segmentStart:segmentEnd]
+		segmentBuff := []byte(segmentStr)
+		segmentDecoded := segmentBuff
+		segmentN, err := base64.RawURLEncoding.Decode(segmentDecoded, segmentBuff)
+		if err != nil {
+			segmentStart = segmentEnd + 1
+			continue
+		}
+		segmentDecoded = segmentDecoded[:segmentN]
+
+		if len(segmentDecoded) == 0 {
+			segmentStart = segmentEnd + 1
+			continue
+		}
+
+		segmentType, err := bitutils.ParseByte3(segmentDecoded, 0)
+		if err != nil {
+			segmentStart = segmentEnd + 1
+			continue
+		}
+
+		if segmentType == segmentTypeDisclosedVendors {
+			disclosedVendors, err := parseDisclosedVendorsSegment(segmentDecoded, 3)
+			if err == nil {
+				metadata.disclosedVendors = disclosedVendors
+				break
+			}
+		}
+
+		segmentStart = segmentEnd + 1
+	}
+}
+
+// Parse the core segment from the consent data. Not expected to be encoded in any way.
+// It is prefered to use ParseString instead, it parses the optional segments as well.
+// Deprecated: Use ParseString instead as it parsed the optional segments as well.
+// kept for backwards compatibility.
 func Parse(data []byte) (api.VendorConsents, error) {
+	return ParseCoreSegment(data)
+}
+
+// ParseCoreSegment parses the TCF 2.0 vendor consent data from the string. This string should *not* be encoded (by base64 or any other encoding).
+// If the data is malformed and cannot be interpreted as a vendor consent string, this will return an error.
+func ParseCoreSegment(data []byte) (api.VendorConsents, error) {
 	metadata, err := parseMetadata(data)
 	if err != nil {
 		return nil, err
@@ -146,7 +167,7 @@ func Parse(data []byte) (api.VendorConsents, error) {
 
 }
 
-func parseOOBVendorSegment(segmentData []byte, startBit uint) (vendorConsentsResolver, error) {
+func parseDisclosedVendorsSegment(segmentData []byte, startBit uint) (vendorConsentsResolver, error) {
 	if len(segmentData)*8 < int(startBit)+16 {
 		return nil, fmt.Errorf("OOB vendor segment too short")
 	}
