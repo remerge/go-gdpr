@@ -131,9 +131,9 @@ func (c consentMetadata) PurposeAllowed(id consentconstants.Purpose) bool {
 	return isSet(c, uint(id)+131)
 }
 
-// OOBDisclosedVendor returns true if the given vendor ID was disclosed (shown to the user) in the CMP UI.
+// DisclosedVendor returns true if the given vendor ID was disclosed (shown to the user) in the CMP UI.
 // TCF1 does not support OOBDisclosedVendors segments, so this always returns false.
-func (c consentMetadata) OOBDisclosedVendor(id uint16) bool {
+func (c consentMetadata) DisclosedVendor(id uint16) bool {
 	return false
 }
 

@@ -62,9 +62,9 @@ type VendorConsents interface {
 	// For more information, see VendorListVersion().
 	VendorConsent(id uint16) bool
 
-	// OOBDisclosedVendor returns true if the given vendor ID was disclosed (shown to the user) in the CMP UI.
+	// DisclosedVendor returns true if the given vendor ID was disclosed (shown to the user) in the CMP UI.
 	// Returns false if the vendor was not disclosed or if OOBDisclosedVendors segment is not present.
-	OOBDisclosedVendor(id uint16) bool
+	DisclosedVendor(id uint16) bool
 
 	// OOBDisclosedVendorsMaxID returns the maximum vendor ID in the OOBDisclosedVendors segment.
 	// Returns 0 if the segment is not present.

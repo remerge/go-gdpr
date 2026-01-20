@@ -45,7 +45,7 @@ type ConsentMetadata struct {
 	vendorConsents                vendorConsentsResolver
 	vendorLegitimateInterests     vendorConsentsResolver
 	publisherRestrictions         pubRestrictResolver
-	oobDisclosedVendors           vendorConsentsResolver
+	disclosedVendors              vendorConsentsResolver
 }
 
 type vendorConsentsResolver interface {
@@ -206,22 +206,22 @@ func (c ConsentMetadata) CheckPubRestriction(purposeID uint8, restrictType uint8
 	return c.publisherRestrictions.CheckPubRestriction(purposeID, restrictType, vendor)
 }
 
-// OOBDisclosedVendor returns true if the given vendor ID was disclosed (shown to the user) in the CMP UI.
+// DisclosedVendor returns true if the given vendor ID was disclosed (shown to the user) in the CMP UI.
 // Returns false if the vendor was not disclosed or if OOBDisclosedVendors segment is not present.
-func (c ConsentMetadata) OOBDisclosedVendor(id uint16) bool {
-	if c.oobDisclosedVendors == nil {
+func (c ConsentMetadata) DisclosedVendor(id uint16) bool {
+	if c.disclosedVendors == nil {
 		return false
 	}
-	return c.oobDisclosedVendors.VendorConsent(id)
+	return c.disclosedVendors.VendorConsent(id)
 }
 
 // OOBDisclosedVendorsMaxID returns the maximum vendor ID in the OOBDisclosedVendors segment.
 // Returns 0 if the segment is not present.
 func (c ConsentMetadata) OOBDisclosedVendorsMaxID() uint16 {
-	if c.oobDisclosedVendors == nil {
+	if c.disclosedVendors == nil {
 		return 0
 	}
-	return c.oobDisclosedVendors.MaxVendorID()
+	return c.disclosedVendors.MaxVendorID()
 }
 
 // Returns true if the bitIndex'th bit in data is a 1, and false if it's a 0.

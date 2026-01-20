@@ -31,7 +31,7 @@ type disclosedVendorsExpectation struct {
 	PurposeAllowed           map[string]bool `json:"purposeAllowed"`
 	VendorConsent            map[string]bool `json:"vendorConsent"`
 	OOBDisclosedVendorsMaxID *int            `json:"oobDisclosedVendorsMaxID"`
-	OOBDisclosedVendor       map[string]bool `json:"oobDisclosedVendor"`
+	DisclosedVendor          map[string]bool `json:"oobDisclosedVendor"`
 }
 
 func loadExpectations() ([]disclosedVendorsExpectation, map[int]*disclosedVendorsExpectation, error) {
@@ -104,9 +104,9 @@ func compareConsentWithExpected(t *testing.T, consentString string, expected *di
 		disclosedMaxID := uint16(*expected.OOBDisclosedVendorsMaxID)
 		for vendorID := uint16(1); vendorID <= disclosedMaxID; vendorID++ {
 			vendorKey := fmt.Sprintf("%d", vendorID)
-			expectedDisclosed, ok := expected.OOBDisclosedVendor[vendorKey]
-			require.True(t, ok, "OOBDisclosedVendor(%d) not found in expectations", vendorID)
-			assert.Equal(t, expectedDisclosed, ourParsed.OOBDisclosedVendor(vendorID), "OOBDisclosedVendor(%d) mismatch", vendorID)
+			expectedDisclosed, ok := expected.DisclosedVendor[vendorKey]
+			require.True(t, ok, "DisclosedVendor(%d) not found in expectations", vendorID)
+			assert.Equal(t, expectedDisclosed, ourParsed.DisclosedVendor(vendorID), "DisclosedVendor(%d) mismatch", vendorID)
 		}
 	}
 }
