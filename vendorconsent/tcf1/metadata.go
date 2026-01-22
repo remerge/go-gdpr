@@ -132,14 +132,14 @@ func (c consentMetadata) PurposeAllowed(id consentconstants.Purpose) bool {
 }
 
 // DisclosedVendor returns true if the given vendor ID was disclosed (shown to the user) in the CMP UI.
-// TCF1 does not support OOBDisclosedVendors segments, so this always returns false.
+// TCF1 does not support DisclosedVendors segments, so this always returns false.
 func (c consentMetadata) DisclosedVendor(id uint16) bool {
 	return false
 }
 
-// OOBDisclosedVendorsMaxID returns the maximum vendor ID in the OOBDisclosedVendors segment.
-// TCF1 does not support OOBDisclosedVendors segments, so this always returns 0.
-func (c consentMetadata) OOBDisclosedVendorsMaxID() uint16 {
+// DisclosedVendorsMaxID returns the maximum vendor ID in the DisclosedVendors segment.
+// TCF1 does not support DisclosedVendors segments, so this always returns 0.
+func (c consentMetadata) DisclosedVendorsMaxID() uint16 {
 	return 0
 }
 

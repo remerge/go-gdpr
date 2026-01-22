@@ -16,22 +16,22 @@ import (
 var debugLineNumber = 16
 
 type disclosedVendorsExpectation struct {
-	LineNumber               int             `json:"lineNumber"`
-	ConsentString            string          `json:"consentString"`
-	Version                  int             `json:"version"`
-	Created                  string          `json:"created"`
-	LastUpdated              string          `json:"lastUpdated"`
-	CmpID                    int             `json:"cmpID"`
-	CmpVersion               int             `json:"cmpVersion"`
-	ConsentScreen            int             `json:"consentScreen"`
-	ConsentLanguage          string          `json:"consentLanguage"`
-	VendorListVersion        int             `json:"vendorListVersion"`
-	TCFPolicyVersion         int             `json:"tcfPolicyVersion"`
-	MaxVendorID              int             `json:"maxVendorID"`
-	PurposeAllowed           map[string]bool `json:"purposeAllowed"`
-	VendorConsent            map[string]bool `json:"vendorConsent"`
-	OOBDisclosedVendorsMaxID *int            `json:"oobDisclosedVendorsMaxID"`
-	DisclosedVendor          map[string]bool `json:"oobDisclosedVendor"`
+	LineNumber            int             `json:"lineNumber"`
+	ConsentString         string          `json:"consentString"`
+	Version               int             `json:"version"`
+	Created               string          `json:"created"`
+	LastUpdated           string          `json:"lastUpdated"`
+	CmpID                 int             `json:"cmpID"`
+	CmpVersion            int             `json:"cmpVersion"`
+	ConsentScreen         int             `json:"consentScreen"`
+	ConsentLanguage       string          `json:"consentLanguage"`
+	VendorListVersion     int             `json:"vendorListVersion"`
+	TCFPolicyVersion      int             `json:"tcfPolicyVersion"`
+	MaxVendorID           int             `json:"maxVendorID"`
+	PurposeAllowed        map[string]bool `json:"purposeAllowed"`
+	VendorConsent         map[string]bool `json:"vendorConsent"`
+	DisclosedVendorsMaxID *int            `json:"disclosedVendorsMaxID"`
+	DisclosedVendor       map[string]bool `json:"disclosedVendor"`
 }
 
 func loadExpectations() ([]disclosedVendorsExpectation, map[int]*disclosedVendorsExpectation, error) {
@@ -96,12 +96,12 @@ func compareConsentWithExpected(t *testing.T, consentString string, expected *di
 		assert.Equal(t, expectedConsent, ourParsed.VendorConsent(vendorID), "VendorConsent(%d) mismatch", vendorID)
 	}
 
-	if expected.OOBDisclosedVendorsMaxID == nil {
-		assert.Equal(t, uint16(0), ourParsed.OOBDisclosedVendorsMaxID(), "expected has no disclosed vendors, but ours has max ID")
+	if expected.DisclosedVendorsMaxID == nil {
+		assert.Equal(t, uint16(0), ourParsed.DisclosedVendorsMaxID(), "expected has no disclosed vendors, but ours has max ID")
 	} else {
-		assert.Equal(t, uint16(*expected.OOBDisclosedVendorsMaxID), ourParsed.OOBDisclosedVendorsMaxID(), "OOBDisclosedVendors MaxVendorID mismatch")
+		assert.Equal(t, uint16(*expected.DisclosedVendorsMaxID), ourParsed.DisclosedVendorsMaxID(), "disclosedVendors MaxVendorID mismatch")
 
-		disclosedMaxID := uint16(*expected.OOBDisclosedVendorsMaxID)
+		disclosedMaxID := uint16(*expected.DisclosedVendorsMaxID)
 		for vendorID := uint16(1); vendorID <= disclosedMaxID; vendorID++ {
 			vendorKey := fmt.Sprintf("%d", vendorID)
 			expectedDisclosed, ok := expected.DisclosedVendor[vendorKey]

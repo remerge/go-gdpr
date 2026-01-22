@@ -207,7 +207,7 @@ func (c ConsentMetadata) CheckPubRestriction(purposeID uint8, restrictType uint8
 }
 
 // DisclosedVendor returns true if the given vendor ID was disclosed (shown to the user) in the CMP UI.
-// Returns false if the vendor was not disclosed or if OOBDisclosedVendors segment is not present.
+// Returns false if the vendor was not disclosed or if DisclosedVendors segment is not present.
 func (c ConsentMetadata) DisclosedVendor(id uint16) bool {
 	if c.disclosedVendors == nil {
 		return false
@@ -215,9 +215,9 @@ func (c ConsentMetadata) DisclosedVendor(id uint16) bool {
 	return c.disclosedVendors.VendorConsent(id)
 }
 
-// OOBDisclosedVendorsMaxID returns the maximum vendor ID in the OOBDisclosedVendors segment.
+// DisclosedVendorsMaxID returns the maximum vendor ID in the DisclosedVendors segment.
 // Returns 0 if the segment is not present.
-func (c ConsentMetadata) OOBDisclosedVendorsMaxID() uint16 {
+func (c ConsentMetadata) DisclosedVendorsMaxID() uint16 {
 	if c.disclosedVendors == nil {
 		return 0
 	}

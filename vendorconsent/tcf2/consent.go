@@ -169,7 +169,7 @@ func ParseCoreSegment(data []byte) (api.VendorConsents, error) {
 
 func parseDisclosedVendorsSegment(segmentData []byte, startBit uint) (vendorConsentsResolver, error) {
 	if len(segmentData)*8 < int(startBit)+16 {
-		return nil, fmt.Errorf("OOB vendor segment too short")
+		return nil, fmt.Errorf("disclosed vendor segment too short")
 	}
 
 	maxVendorID, err := bitutils.ParseUInt16(segmentData, startBit)
@@ -183,7 +183,7 @@ func parseDisclosedVendorsSegment(segmentData []byte, startBit uint) (vendorCons
 
 	encodingBit := startBit + 16
 	if encodingBit >= uint(len(segmentData))*8 {
-		return nil, fmt.Errorf("OOB vendor segment too short for encoding bit")
+		return nil, fmt.Errorf("disclosed vendor segment too short for encoding bit")
 	}
 
 	tempMetadata := ConsentMetadata{data: segmentData}
