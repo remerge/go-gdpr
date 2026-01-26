@@ -22,84 +22,76 @@ func ParseString(consent string) (api.VendorConsents, error) {
 		return nil, consentconstants.ErrEmptyDecodedConsent
 	}
 
-	decoded, coreEnd, err := decodeBaseSegment(consent)
+	decoded, coreEnd, err := decodeSegmentFrom(consent, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	metadata, err := Parse(decoded)
+	metadata, err := ParseCoreSegment(decoded)
 	if err != nil {
 		return nil, err
 	}
 
 	consentMetadata, ok := metadata.(ConsentMetadata)
 	if ok && coreEnd < len(consent) {
-		parseOptionalSegments(consent, coreEnd, &consentMetadata)
+		segmentStart := coreEnd + 1
+		for segmentStart < len(consent) {
+			segmentDecoded, segmentEnd, err := decodeSegmentFrom(consent, segmentStart)
+			if err != nil {
+				segmentStart = segmentEnd + 1
+				continue
+			}
+
+			ok := parseOptionalSegment(segmentDecoded, &consentMetadata)
+			if !ok {
+				break
+			}
+
+			segmentStart = segmentEnd + 1
+		}
 		return consentMetadata, nil
 	}
 	return metadata, nil
 }
 
-func decodeBaseSegment(consent string) ([]byte, int, error) {
-	coreEnd := strings.IndexByte(consent, consentStringTCF2Separator)
-	if coreEnd == -1 {
-		coreEnd = len(consent)
+func decodeSegmentFrom(consent string, start int) ([]byte, int, error) {
+	segmentEnd := strings.IndexByte(consent[start:], consentStringTCF2Separator)
+	if segmentEnd == -1 {
+		segmentEnd = len(consent)
+	} else {
+		segmentEnd += start
 	}
 
-	coreSegment := consent[:coreEnd]
-	buff := []byte(coreSegment)
+	buff := []byte(consent[start:segmentEnd])
 	decoded := buff
 	n, err := base64.RawURLEncoding.Decode(decoded, buff)
 	if err != nil {
-		return nil, 0, err
+		return nil, segmentEnd, err
 	}
 	decoded = decoded[:n:n]
 
-	return decoded, coreEnd, nil
+	return decoded, segmentEnd, nil
 }
 
-func parseOptionalSegments(consent string, coreEnd int, metadata *ConsentMetadata) {
-	segmentStart := coreEnd + 1
-	for segmentStart < len(consent) {
-		segmentEnd := strings.IndexByte(consent[segmentStart:], consentStringTCF2Separator)
-
-		if segmentEnd == -1 {
-			segmentEnd = len(consent)
-		} else {
-			segmentEnd += segmentStart
-		}
-
-		segmentStr := consent[segmentStart:segmentEnd]
-		segmentBuff := []byte(segmentStr)
-		segmentDecoded := segmentBuff
-		segmentN, err := base64.RawURLEncoding.Decode(segmentDecoded, segmentBuff)
-		if err != nil {
-			segmentStart = segmentEnd + 1
-			continue
-		}
-		segmentDecoded = segmentDecoded[:segmentN]
-
-		if len(segmentDecoded) == 0 {
-			segmentStart = segmentEnd + 1
-			continue
-		}
-
-		segmentType, err := bitutils.ParseByte3(segmentDecoded, 0)
-		if err != nil {
-			segmentStart = segmentEnd + 1
-			continue
-		}
-
-		if segmentType == segmentTypeDisclosedVendors {
-			disclosedVendors, err := parseDisclosedVendorsSegment(segmentDecoded, 3)
-			if err == nil {
-				metadata.disclosedVendors = disclosedVendors
-				break
-			}
-		}
-
-		segmentStart = segmentEnd + 1
+func parseOptionalSegment(segmentDecoded []byte, metadata *ConsentMetadata) bool {
+	if len(segmentDecoded) == 0 {
+		return false
 	}
+
+	segmentType, err := bitutils.ParseByte3(segmentDecoded, 0)
+	if err != nil {
+		return false
+	}
+
+	if segmentType == segmentTypeDisclosedVendors {
+		disclosedVendors, err := parseDisclosedVendorsSegment(segmentDecoded, 3)
+		if err == nil {
+			metadata.disclosedVendors = disclosedVendors
+			return true
+		}
+	}
+
+	return false
 }
 
 // Parse the core segment from the consent data. Not expected to be encoded in any way.
@@ -164,7 +156,6 @@ func ParseCoreSegment(data []byte) (api.VendorConsents, error) {
 	metadata.publisherRestrictions = pubRestrictions
 
 	return metadata, err
-
 }
 
 func parseDisclosedVendorsSegment(segmentData []byte, startBit uint) (vendorConsentsResolver, error) {
