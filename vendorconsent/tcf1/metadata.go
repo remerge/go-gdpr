@@ -131,6 +131,18 @@ func (c consentMetadata) PurposeAllowed(id consentconstants.Purpose) bool {
 	return isSet(c, uint(id)+131)
 }
 
+// DisclosedVendor returns true if the given vendor ID was disclosed (shown to the user) in the CMP UI.
+// TCF1 does not support DisclosedVendors segments, so this always returns false.
+func (c consentMetadata) DisclosedVendor(id uint16) bool {
+	return false
+}
+
+// DisclosedVendorsMaxID returns the maximum vendor ID in the DisclosedVendors segment.
+// TCF1 does not support DisclosedVendors segments, so this always returns 0.
+func (c consentMetadata) DisclosedVendorsMaxID() uint16 {
+	return 0
+}
+
 // Returns true if the bitIndex'th bit in data is a 1, and false if it's a 0.
 func isSet(data []byte, bitIndex uint) bool {
 	byteIndex := bitIndex / 8

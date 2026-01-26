@@ -5,6 +5,27 @@ import (
 	"fmt"
 )
 
+// ParseByte3 parses 3 bits of data from the data array, starting at the given index
+func ParseByte3(data []byte, bitStartIndex uint) (byte, error) {
+	startByte := bitStartIndex / 8
+	bitStartOffset := bitStartIndex % 8
+	if bitStartOffset < 6 {
+		if uint(len(data)) < (startByte + 1) {
+			return 0, fmt.Errorf("ParseByte3 expected 3 bits to start at bit %d, but the consent string was only %d bytes long", bitStartIndex, len(data))
+		}
+		return (data[startByte] & (0xe0 >> bitStartOffset)) >> (5 - bitStartOffset), nil
+	}
+	if uint(len(data)) < (startByte + 2) {
+		return 0, fmt.Errorf("ParseByte3 expected 3 bits to start at bit %d, but the consent string was only %d bytes long (needs second byte)", bitStartIndex, len(data))
+	}
+
+	bitsConsumed := 8 - bitStartOffset
+	overflow := 3 - bitsConsumed
+	leftBits := (data[startByte] & (0xff >> bitStartOffset)) << overflow
+	rightBits := (data[startByte+1] & (0xff << (8 - overflow))) >> (8 - overflow)
+	return leftBits | rightBits, nil
+}
+
 // ParseByte4 parses 4 bits of data from the data array, starting at the given index
 func ParseByte4(data []byte, bitStartIndex uint) (byte, error) {
 	startByte := bitStartIndex / 8
