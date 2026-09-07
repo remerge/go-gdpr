@@ -183,6 +183,8 @@ func TestDisclosedVendors_FoundInAnySegmentOrder(t *testing.T) {
 	}
 
 	for name, consentString := range tests {
+		name := name
+		consentString := consentString
 		t.Run(name, func(t *testing.T) {
 			consent, err := ParseString(consentString)
 			require.NoError(t, err)
