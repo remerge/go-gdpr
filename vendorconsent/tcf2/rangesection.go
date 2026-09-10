@@ -6,12 +6,13 @@ import (
 	"github.com/prebid/go-gdpr/bitutils"
 )
 
+// parseRangeSection parses a RangeSection starting at startbit. It is used for
+// the vendor sections of the Core String and for the DisclosedVendors segment,
+// which is a much smaller, self-contained segment. Every field read below is
+// individually bounds-checked, so no minimum length is imposed here: a length
+// derived from one caller's startbit would reject valid data from the others.
 func parseRangeSection(metadata ConsentMetadata, maxVendorID uint16, startbit uint) (*rangeSection, uint, error) {
 	data := metadata.data
-
-	if len(data) < 31 {
-		return nil, 0, fmt.Errorf("vendor consent strings using RangeSections require at least 31 bytes. Got %d", len(data))
-	}
 
 	// This makes an int from bits [startBit, startBit + 12)
 	numEntries, err := bitutils.ParseUInt12(data, startbit)

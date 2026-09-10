@@ -35,16 +35,14 @@ func ParseString(consent string) (api.VendorConsents, error) {
 	consentMetadata, ok := metadata.(ConsentMetadata)
 	if ok && coreEnd < len(consent) {
 		segmentStart := coreEnd + 1
+		// The segments after the Core String each carry their own segment type,
+		// so the spec allows them to appear in any order. Every segment has to be
+		// visited: a segment we ignore or cannot decode must not stop the scan,
+		// or a DisclosedVendors segment placed after it would be missed.
 		for segmentStart < len(consent) {
 			segmentDecoded, segmentEnd, err := decodeSegmentFrom(consent, segmentStart)
-			if err != nil {
-				segmentStart = segmentEnd + 1
-				continue
-			}
-
-			ok := parseOptionalSegment(segmentDecoded, &consentMetadata)
-			if !ok {
-				break
+			if err == nil {
+				parseOptionalSegment(segmentDecoded, &consentMetadata)
 			}
 
 			segmentStart = segmentEnd + 1
@@ -73,25 +71,27 @@ func decodeSegmentFrom(consent string, start int) ([]byte, int, error) {
 	return decoded, segmentEnd, nil
 }
 
-func parseOptionalSegment(segmentDecoded []byte, metadata *ConsentMetadata) bool {
+// parseOptionalSegment records the contents of one segment that follows the
+// Core String, if it is a segment type this parser reads. Segment types we do
+// not read, and segments we cannot decode, are skipped without failing the
+// parse: the caller keeps scanning the remaining segments either way.
+func parseOptionalSegment(segmentDecoded []byte, metadata *ConsentMetadata) {
 	if len(segmentDecoded) == 0 {
-		return false
+		return
 	}
 
 	segmentType, err := bitutils.ParseByte3(segmentDecoded, 0)
 	if err != nil {
-		return false
+		return
 	}
 
-	if segmentType == segmentTypeDisclosedVendors {
-		disclosedVendors, err := parseDisclosedVendorsSegment(segmentDecoded, 3)
-		if err == nil {
-			metadata.disclosedVendors = disclosedVendors
-			return true
-		}
+	if segmentType != segmentTypeDisclosedVendors {
+		return
 	}
 
-	return false
+	if disclosedVendors, err := parseDisclosedVendorsSegment(segmentDecoded, 3); err == nil {
+		metadata.disclosedVendors = disclosedVendors
+	}
 }
 
 // Parse the core segment from the consent data. Not expected to be encoded in any way.
